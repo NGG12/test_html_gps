@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Concept Bản Đồ Lái Xe</title>
     <!-- Nhúng thư viện Bản đồ Maplibre miễn phí -->
-    <script src="https://unpkg.com"></script>
-    <link href="https://unpkg.com" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
@@ -29,12 +29,12 @@
   const map = new maplibregl.Map({
       container: 'map',
       // SỬA CHUẨN: Sử dụng style từ OpenFreeMap Bright
-      style: 'https://tiles.openfreemap.org/styles/bright', 
+      style: 'https://tiles.openfreemap.org/styles/bright',
       // SỬA CHUẨN: Gọi tới Style Vector do MapTiler Server tự cấp (Không cần internet)
-      //style: 'http://macbook-pro-ng-display:8078/styles/basic-preview/style.json', 
+      //style: 'http://macbook-pro-ng-display:8078/styles/basic-preview/style.json',
       center: [105.8542, 21.0285], // Tọa độ trung tâm Hà Nội
       zoom: 13,
-      pitch: 60, 
+      pitch: 60,
       bearing: 0
   });
 
@@ -50,9 +50,9 @@ const junctionsData = {
     ]
 };
 
-// Hàm tính khoảng cách giữa 2 tọa độ (mét) bằng chíp điện thoại
+// Hàm tính khoảng cách giữa 2 tọa độ (mét)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; 
+    const R = 6371e3;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -65,10 +65,9 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 // Hàm bắt điện thoại đọc thành tiếng
 function speakMessage(text) {
     if ('speechSynthesis' in window) {
-        // Hủy các câu đang đọc dở để đọc câu mới ngay lập tức
-        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'vi-VN'; // Đọc bằng tiếng Việt
+        utterance.lang = 'vi-VN';
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -82,41 +81,37 @@ if (navigator.geolocation) {
         const userLat = position.coords.latitude;
         const userLon = position.coords.longitude;
 
-        // Cập nhật vị trí tâm bản đồ theo xe chạy
         map.setCenter([userLon, userLat]);
 
         let hasAlert = false;
 
-        // Vòng lặp tự tính toán khoảng cách bằng CPU điện thoại
         junctionsData.features.forEach(junction => {
             const jLon = junction.geometry.coordinates[0];
             const jLat = junction.geometry.coordinates[1];
             const distance = calculateDistance(userLat, userLon, jLat, jLon);
 
-            // Nếu xe lọt vào bán kính cảnh báo (ví dụ < 50m)
             if (distance <= junction.properties.radius) {
                 hasAlert = true;
                 document.getElementById('alert-text').innerText = junction.properties.message;
                 document.getElementById('alert-box').style.display = 'block';
 
-                // Nếu chưa cảnh báo nút này thì phát âm thanh
                 if (!alertedJunctions[junction.properties.name]) {
                     speakMessage(junction.properties.message);
-                    alertedJunctions[junction.properties.name] = true; // Đánh dấu đã đọc
+                    alertedJunctions[junction.properties.name] = true;
                 }
             }
         });
 
-        // Nếu đi ra khỏi tất cả các nút giao thì tắt bảng thông báo
         if (!hasAlert) {
             document.getElementById('alert-box').style.display = 'none';
-            alertedJunctions = {}; // Reset lại trạng thái khi đã đi qua hẳn
+            alertedJunctions = {};
         }
 
     }, (error) => {
         console.error("Lỗi lấy GPS: ", error);
+        alert("Không lấy được vị trí GPS: " + error.message);
     }, {
-        enableHighAccuracy: true, // Bật GPS độ chính xác cao cho lái xe
+        enableHighAccuracy: true,
         maximumAge: 0,
         timeout: 5000
     });
