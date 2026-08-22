@@ -42,6 +42,9 @@
 
 <div id="control-panel">
     <div class="row">
+        <input id="input-paste" type="text" placeholder="Dán tọa độ từ Google Maps (vd: 21.0035, 105.8194)" style="flex:1">
+    </div>
+    <div class="row">
         <input id="input-lat" type="number" step="any" placeholder="Vĩ độ (lat)" value="21.0035">
         <input id="input-lng" type="number" step="any" placeholder="Kinh độ (lng)" value="105.8194">
     </div>
@@ -132,6 +135,16 @@ function speakMessage(text) {
 let alertedJunctions = {};
 
 // 3. Bật định vị GPS thời gian thực trên điện thoại
+// Dán tọa độ nguyên cụm "lat, lng" copy từ Google Maps -> tự tách vào 2 ô lat/lng
+// (tránh nhầm thứ tự trục khi gõ tay)
+document.getElementById('input-paste').addEventListener('input', (e) => {
+    const parts = e.target.value.split(',').map(s => parseFloat(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        document.getElementById('input-lat').value = parts[0]; // Google Maps: lat trước
+        document.getElementById('input-lng').value = parts[1]; // lng sau
+    }
+});
+
 // 4. Bảng điều khiển: cập nhật điểm cảnh báo bằng tay + test âm thanh
 document.getElementById('btn-update').addEventListener('click', () => {
     const lat = parseFloat(document.getElementById('input-lat').value);
