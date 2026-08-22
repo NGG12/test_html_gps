@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hanoi Roads</title>
+
+  <link
+    href="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.css"
+    rel="stylesheet"
+  />
+
+  <script src="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.js"></script>
+
+  <style>
+    html, body, #map {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .mapboxgl-popup-content {
+      max-width: 360px;
+      font: 12px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .inspector {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .inspector td {
+      border-top: 1px solid #eee;
+      padding: 4px 0;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .inspector td:first-child {
+      color: #666;
+      padding-right: 12px;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .inspector-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .inspector-subtitle {
+      color: #666;
+      font-size: 11px;
+      margin-top: -2px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<script>
+const roadLayerIds = [
+  'motorway',
+  'trunk',
+  'primary',
+  'secondary',
+  'residential',
+  'footway'
+];
+
+const map = new maplibregl.Map({
+  container: 'map',
+
+  center: [105.84, 21.03],
+  zoom: 14,
+
+  style: {
+    version: 8,
+
+    sources: {
+      roads: {
+        type: 'vector',
+        tiles: [
+          <!-- 'http://server-188:3000/roads/{z}/{x}/{y}' -->
+          'https://traffic-tiles.gofa.vn/base_roads/{z}/{x}/{y}'
+        ],
+        minzoom: 0,
+        maxzoom: 20
+      },
+
+      selectedRoad: {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: []
+        }
+      }
+    },
+
+    layers: [
+
+      // MOTORWAY
+      {
+        id: 'motorway',
+        type: 'line',
+        source: 'roads',
+        'source-layer': 'roads',
+
+        filter: [
+          '==',
+          ['get', 'highway'],
+          'motorway'
+        ],
+
+        paint: {
+          'line-color': '#e74c3c',
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            7,  1,
+            10, 2,
+            13, 5,
+            16, 10
+          ]
+        }
+      },
+
+      // TRUNK
+      {
+        id: 'trunk',
+        type: 'line',
+        source: 'roads',
+        'source-layer': 'roads',
+
+        filter: [
+          '==',
+          ['get', 'highway'],
+          'trunk'
+        ],
+
+        paint: {
+          'line-color': '#e67e22',
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            8,  1,
+            11, 2,
+            14, 5,
+            16, 8
+          ]
+        }
+      },
+
+      // PRIMARY
+      {
+        id: 'primary',
+        type: 'line',
+        source: 'roads',
+        'source-layer': 'roads',
+
+        minzoom: 9,
+
+        filter: [
+          '==',
+          ['get', 'highway'],
+          'primary'
+        ],
+
+        paint: {
+          'line-color': '#f1c40f',
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            9,  0.8,
+            12, 2,
+            15, 5
+          ]
+        }
+      },
+
+      // SECONDARY
+      {
+        id: 'secondary',
+        type: 'line',
+        source: 'roads',
+        'source-layer': 'roads',
+
+        minzoom: 11,
+
+        filter: [
+          '==',
+          ['get', 'highway'],
+          'secondary'
+        ],
+
+        paint: {
+          'line-color': '#95a5a6',
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            11, 0.7,
+            14, 2,
+            17, 4
+          ]
+        }
+      },
+
+      // RESIDENTIAL
+      {
+        id: 'residential',
+        type: 'line',
+        source: 'roads',
+        'source-layer': 'roads',
+
+        minzoom: 13,
+
+        filter: [
+          '==',
+          ['get', 'highway'],
+          'residential'
+        ],
+
+        paint: {
+          'line-color': '#bdc3c7',
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            13, 0.5,
+            16, 2,
+            19, 4
+          ]
+        }
+      },
+
+      // FOOTWAY
+      {
+        id: 'footway',
+        type: 'line',
+        source: 'roads',
+        'source-layer': 'roads',
+
+        minzoom: 15,
+
+        filter: [
+          '==',
+          ['get', 'highway'],
+          'footway'
+        ],
+
+        paint: {
+          'line-color': '#7f8c8d',
+
+          'line-width': 1,
+          'line-dasharray': [2, 2]
+        }
+      },
+
+      // SELECTED ROAD HIGHLIGHT
+      {
+        id: 'selected-road-highlight',
+        type: 'line',
+        source: 'selectedRoad',
+        paint: {
+          'line-color': '#2ecc71',
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, 3,
+            16, 7,
+            20, 12
+          ],
+          'line-opacity': 0.9
+        }
+      }
+
+    ]
+    
+  }
+});
+
+map.addControl(new maplibregl.NavigationControl());
+
+function formatValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+}
+
+function buildInspectorHtml(feature) {
+  const properties = feature.properties || {};
+  const parsedTags = (() => {
+    try {
+      return properties.tags_json ? JSON.parse(properties.tags_json) : null;
+    } catch (error) {
+      return null;
+    }
+  })();
+
+  const orderedKeys = [
+    'osm_id',
+    'name',
+    'ref',
+    'highway',
+    'surface',
+    'lanes',
+    'lanes_forward',
+    'lanes_backward',
+    'maxspeed',
+    'maxspeed_forward',
+    'maxspeed_backward',
+    'oneway',
+    'access',
+    'vehicle',
+    'motor_vehicle',
+    'bicycle',
+    'foot',
+    'junction',
+    'bridge',
+    'tunnel',
+    'layer',
+    'sidewalk',
+    'lit',
+    'turn_lanes'
+  ];
+
+  const rows = orderedKeys
+    .filter((key) => properties[key] !== undefined)
+    .map((key) => `<tr><td>${key}</td><td>${formatValue(properties[key])}</td></tr>`)
+    .join('');
+
+  const tagsBlock = parsedTags
+    ? `<details style="margin-top:10px;"><summary>Raw tags</summary><pre style="white-space:pre-wrap; margin:8px 0 0;">${JSON.stringify(parsedTags, null, 2)}</pre></details>`
+    : '';
+
+  return `
+    <div class="inspector-title">Road feature</div>
+    <div class="inspector-subtitle">osm_id ${formatValue(properties.osm_id)}</div>
+    <table class="inspector">${rows}</table>
+    ${tagsBlock}
+  `;
+}
+
+function setSelectedRoad(feature) {
+  const source = map.getSource('selectedRoad');
+  if (!source) {
+    return;
+  }
+
+  source.setData({
+    type: 'FeatureCollection',
+    features: [feature]
+  });
+}
+
+function clearSelectedRoad() {
+  const source = map.getSource('selectedRoad');
+  if (!source) {
+    return;
+  }
+
+  source.setData({
+    type: 'FeatureCollection',
+    features: []
+  });
+}
+
+function inspectRoad(event) {
+  const features = map.queryRenderedFeatures(event.point, {
+    layers: roadLayerIds
+  });
+
+  if (!features.length) {
+    return;
+  }
+
+  const feature = features[0];
+  setSelectedRoad(feature);
+
+  new maplibregl.Popup({ closeOnClick: true, maxWidth: '380px' })
+    .setLngLat(event.lngLat)
+    .setHTML(buildInspectorHtml(feature))
+    .addTo(map);
+}
+
+map.on('load', () => {
+  for (const layerId of roadLayerIds) {
+    map.on('mouseenter', layerId, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+
+    map.on('mouseleave', layerId, () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    map.on('click', layerId, inspectRoad);
+  }
+
+  map.on('click', (event) => {
+    const features = map.queryRenderedFeatures(event.point, { layers: roadLayerIds });
+    if (!features.length) {
+      clearSelectedRoad();
+    }
+  });
+});
+</script>
+
+</body>
+</html>
